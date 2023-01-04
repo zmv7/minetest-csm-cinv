@@ -45,7 +45,9 @@ core.register_on_inventory_open(function(inventory)
 	end
 	local ctrl = core.localplayer:get_control()
 	if ctrl and ctrl.aux1 and not ctrl.sneak then
-		inv_fs()
+		core.after(0,function()
+			inv_fs()
+		end)
 	end
 end)
 
