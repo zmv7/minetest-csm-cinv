@@ -2,7 +2,7 @@ local W = 8
 local lists = {}
 local inv = {}
 local tab = 1
-local page = 1
+local offset = 0
 
 local function inv_fs()
 	local list = lists[tab] or "craft"
@@ -22,13 +22,11 @@ local function inv_fs()
 		"listring[current_player;main]" ..
 		"listring[current_player;craft]"
 		or
-		"list[current_player;"..list..";0.2,0.2;"..W..",4;"..(size >= (W*4) and tostring((W*4)*page-(W*4)) or "0").."]" ..
+		"list[current_player;"..list..";0.2,0.2;"..W..",4;"..(size >= (W*4) and tostring(offset*8) or "0").."]" ..
 		"listring[]" ..
-		(size > 32 and
-		"button[0.2,4.4;1,1;prevpage;<-]" ..
-		"field[1.3,4.7;1.4,1;page;;"..(page or "1").."]" ..
-		"field_close_on_enter[page;false]" ..
-		"button[2.2,4.4;1,1;nextpage;->]" or ""))
+		(size > (W*4) and
+		"scrollbaroptions[min=0;max="..tostring(size/W)-4 ..";smallstep=1;largestep=4]" ..
+		"scrollbar[8.1,0.2;0.3,3.9;vertical;scroll;"..offset.."]" or ""))
 	core.show_formspec("cinv",fs)
 end
 
@@ -59,18 +57,17 @@ core.register_chatcommand("cinv",{
 	inv_fs()
 	return true, table.concat(lists,", ")
 end})
+
 core.register_on_formspec_input(function(formname,fields)
 	if formname ~= "cinv" then return end
+	core.display_chat_message(dump(fields,""))
 	if fields.tabs then
 		tab = tonumber(fields.tabs) or 1
 		inv_fs()
 	end
-	if fields.prevpage and page > 1 then
-		page = page - 1
-		inv_fs()
-	end
-	if fields.nextpage then
-		page = page + 1
+	if fields.scroll then
+		local evnt = core.explode_scrollbar_event(fields.scroll)
+		offset = evnt.value
 		inv_fs()
 	end
 	if fields.page and fields.key_enter_field == "page" then
