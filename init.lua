@@ -25,6 +25,7 @@ local function inv_fs()
 		"list[current_player;"..list..";0.2,0.2;"..W..",4;"..(size >= (W*4) and tostring(offset*8) or "0").."]" ..
 		"listring[]" ..
 		(size > (W*4) and
+		"set_focus[scroll;true]" ..
 		"scrollbaroptions[min=0;max="..tostring(size/W)-4 ..";smallstep=1;largestep=4]" ..
 		"scrollbar[8.1,0.2;0.3,3.9;vertical;scroll;"..offset.."]" or ""))
 	core.show_formspec("cinv",fs)
@@ -60,7 +61,6 @@ end})
 
 core.register_on_formspec_input(function(formname,fields)
 	if formname ~= "cinv" then return end
-	core.display_chat_message(dump(fields,""))
 	if fields.tabs then
 		tab = tonumber(fields.tabs) or 1
 		inv_fs()
