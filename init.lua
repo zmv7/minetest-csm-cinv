@@ -22,7 +22,7 @@ local function inv_fs()
 		"listring[current_player;main]" ..
 		"listring[current_player;craft]"
 		or
-		"list[current_player;"..list..";0.2,0.2;"..W..",4;"..(size >= (W*4) and tostring(offset*8) or "0").."]" ..
+		"list[current_player;"..list..";0.2,0.2;"..W..",4;"..(size >= (W*4) and tostring(offset*W) or "0").."]" ..
 		"listring[]" ..
 		(size > (W*4) and
 		"set_focus[scroll;true]" ..
