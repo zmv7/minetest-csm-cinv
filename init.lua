@@ -26,7 +26,7 @@ local function inv_fs()
 		"listring[]" ..
 		(size > (W*4) and
 		"set_focus[scroll;true]" ..
-		"scrollbaroptions[min=0;max="..tostring(size/W)-4 ..";smallstep=1;largestep=4]" ..
+		"scrollbaroptions[min=0;max="..tostring(math.ceil(size/W))-4 ..";smallstep=1;largestep=4]" ..
 		"scrollbar[8.1,0.2;0.3,3.9;vertical;scroll;"..offset.."]" or ""))
 	core.show_formspec("cinv",fs)
 end
