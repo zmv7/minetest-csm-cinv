@@ -41,8 +41,8 @@ core.register_on_inventory_open(function(inventory)
 	end
 	table.sort(lists)
 	table.insert(lists,1,"craft")
-	if inv["main"] and #inv["main"] == 36 then
-		W = 9
+	if inventory["main"] then
+		W = math.ceil(#inventory["main"]/4)
 	end
 	local ctrl = core.localplayer:get_control()
 	if ctrl and ctrl.aux1 and not ctrl.sneak then
