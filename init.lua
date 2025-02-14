@@ -16,11 +16,10 @@ local function inv_fs()
 		"list[current_player;main;0.2,5.5;"..W..",4;0]" ..
 		(list == "craft" and
 		"list[current_player;craft;"..(inv["craft"] and #inv["craft"] == 4 and "3,0;2,2" or "2,0;3,3")..";0]" ..
+		"listring[]" ..
 		"label[5.3,0.2;->]" ..
 		"list[current_player;craftpreview;6,0;1,1;]" ..
-		"list[current_player;craftresult;6,1;1,1;]" ..
-		"listring[current_player;main]" ..
-		"listring[current_player;craft]"
+		"list[current_player;craftresult;6,1;1,1;]"
 		or
 		"list[current_player;"..list..";0.2,0.2;"..W..",4;"..(size >= (W*4) and tostring(offset*W) or "0").."]" ..
 		"listring[]" ..
@@ -43,6 +42,9 @@ core.register_on_inventory_open(function(inventory)
 	table.insert(lists,1,"craft")
 	if inventory["main"] then
 		W = math.ceil(#inventory["main"]/4)
+		if W < 8 then
+			W = 8
+		end
 	end
 	local ctrl = core.localplayer:get_control()
 	if ctrl and ctrl.aux1 and not ctrl.sneak then
