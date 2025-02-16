@@ -2,7 +2,20 @@ local W = 8
 local lists = {}
 local inv = {}
 local tab = 1
-local offset = 0
+local hash = {}
+local offset = setmetatable({}, {
+	__index = function(self ,key)
+		if key == "reset" then
+			return function()
+				for k in pairs(self) do
+					self[k] = nil
+				end
+			end
+		else
+			return 0
+		end
+	end
+})
 
 local function inv_fs()
 	local list = lists[tab] or "craft"
@@ -21,30 +34,38 @@ local function inv_fs()
 		"list[current_player;craftpreview;6,0;1,1;]" ..
 		"list[current_player;craftresult;6,1;1,1;]"
 		or
-		"list[current_player;"..list..";0.2,0.2;"..W..",4;"..(size >= (W*4) and tostring(offset*W) or "0").."]" ..
+		"list[current_player;"..list..";0.2,0.2;"..W..",4;"..(size >= (W*4) and tostring(offset[tab]*W) or "0").."]" ..
 		"listring[]" ..
 		(size > (W*4) and
 		"set_focus[scroll;true]" ..
 		"scrollbaroptions[min=0;max="..tostring(math.ceil(size/W))-4 ..";smallstep=1;largestep=4]" ..
-		"scrollbar[8.1,0.2;0.3,3.9;vertical;scroll;"..offset.."]" or ""))
+		"scrollbar[8.1,0.2;0.3,3.9;vertical;scroll;"..offset[tab].."]" or ""))
 	core.show_formspec("cinv",fs)
 end
 
 core.register_on_inventory_open(function(inventory)
-	inv = inventory
-	lists = {}
+	local newlists = {}
+	local newhash = {}
 	for listname,list in pairs(inventory) do
+		table.insert(newhash, #list)
 		if listname ~= "main" and listname ~= "craft" and listname ~= "craftresult" and listname ~= "craftpreview" then
-			table.insert(lists,listname)
+			table.insert(newlists,listname)
 		end
 	end
-	table.sort(lists)
-	table.insert(lists,1,"craft")
-	if inventory["main"] then
-		W = math.ceil(#inventory["main"]/4)
-		if W < 8 then
-			W = 8
+	if table.concat(hash) ~= table.concat(newhash) then
+		inv = inventory
+		hash = newhash
+		lists = newlists
+		table.sort(lists)
+		table.insert(lists,1,"craft")
+		if inventory["main"] then
+			W = math.ceil(#inventory["main"]/4)
+			if W < 8 then
+				W = 8
+			end
 		end
+		offset:reset()
+		tab = 1
 	end
 	local ctrl = core.localplayer:get_control()
 	if ctrl and ctrl.aux1 and not ctrl.sneak then
@@ -69,7 +90,7 @@ core.register_on_formspec_input(function(formname,fields)
 	end
 	if fields.scroll then
 		local evnt = core.explode_scrollbar_event(fields.scroll)
-		offset = evnt.value
+		offset[tab] = evnt.value
 		inv_fs()
 	end
 	if fields.page and fields.key_enter_field == "page" then
