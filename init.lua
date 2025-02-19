@@ -1,9 +1,11 @@
 local W = 8
-local lists = {}
 local inv = {}
-local tab = 1
+local lists_top = {}
+local lists_bot = {}
+local tab_top = 1
+local tab_bot = 1
 local hash = {}
-local offset = setmetatable({}, {
+local offset_mt = {
 	__index = function(self ,key)
 		if key == "reset" then
 			return function()
@@ -15,31 +17,39 @@ local offset = setmetatable({}, {
 			return 0
 		end
 	end
-})
+}
+local offset_top = setmetatable({}, offset_mt)
+local offset_bot = setmetatable({}, offset_mt)
 
-local function inv_fs()
-	local list = lists[tab] or "craft"
-	local size = inv[list] and #inv[list] or 32
+local function cinv()
+	local list_top = lists_top[tab_top] or "craft"
+	local list_bot = lists_bot[tab_bot] or "main"
+	local size_top = inv[list_top] and #inv[list_top] or 32
+	local size_bot = inv[list_bot] and #inv[list_bot] or 32
 	local fs = "size["..(W+0.4)..",9.5]" ..
 		"listcolors[#777;#AAA]" ..
-		"tabheader[0,0;tabs;"..table.concat(lists,",")..";"..(tab or "1")..";false;false]" ..
-		"label[0.3,-0.3;"..(lists[tab] or "").."]" ..
+		"tabheader[0,0;tabs_top;"..table.concat(lists_top,",")..";"..(tab_top or "1")..";false;false]" ..
+		"tabheader[0,10.7;tabs_bot;"..table.concat(lists_bot,",")..";"..(tab_bot or "1")..";false;false]" ..
+		"label[0.3,-0.3;"..(lists_top[tab_top] or "").."]" ..
 		"label["..(W-1.5)..",4.6;Trash:]" ..
 		"list[detached:trash;main;"..(W-0.8)..",4.4;1,1;0]" ..
-		"list[current_player;main;0.2,5.5;"..W..",4;0]" ..
-		(list == "craft" and
+		"list[current_player;"..list_bot..";0.2,5.5;"..W..",4;"..(size_bot >= (W*4) and tostring(offset_bot[tab_bot]*W) or "0").."]" ..
+		(size_bot > (W*4) and
+		"scrollbaroptions[min=0;max="..tostring(math.ceil(size_bot/W))-4 ..";smallstep=1;largestep=4]" ..
+		"scrollbar[8.1,5.5;0.3,3.9;vertical;scroll_bot;"..offset_bot[tab_bot].."]" or "") ..
+		(list_top == "craft" and
 		"list[current_player;craft;"..(inv["craft"] and #inv["craft"] == 4 and "3,0;2,2" or "2,0;3,3")..";0]" ..
 		"listring[]" ..
 		"label[5.3,0.2;->]" ..
 		"list[current_player;craftpreview;6,0;1,1;]" ..
 		"list[current_player;craftresult;6,1;1,1;]"
 		or
-		"list[current_player;"..list..";0.2,0.2;"..W..",4;"..(size >= (W*4) and tostring(offset[tab]*W) or "0").."]" ..
+		"list[current_player;"..list_top..";0.2,0.2;"..W..",4;"..(size_top >= (W*4) and tostring(offset_top[tab_top]*W) or "0").."]" ..
 		"listring[]" ..
-		(size > (W*4) and
+		(size_top > (W*4) and
 		"set_focus[scroll;true]" ..
-		"scrollbaroptions[min=0;max="..tostring(math.ceil(size/W))-4 ..";smallstep=1;largestep=4]" ..
-		"scrollbar[8.1,0.2;0.3,3.9;vertical;scroll;"..offset[tab].."]" or ""))
+		"scrollbaroptions[min=0;max="..tostring(math.ceil(size_top/W))-4 ..";smallstep=1;largestep=4]" ..
+		"scrollbar[8.1,0.2;0.3,3.9;vertical;scroll_top;"..offset_top[tab_top].."]" or ""))
 	core.show_formspec("cinv",fs)
 end
 
@@ -55,22 +65,26 @@ core.register_on_inventory_open(function(inventory)
 	if table.concat(hash) ~= table.concat(newhash) then
 		inv = inventory
 		hash = newhash
-		lists = newlists
-		table.sort(lists)
-		table.insert(lists,1,"craft")
+		table.sort(newlists)
+		lists_top = table.copy(newlists)
+		lists_bot = table.copy(newlists)
+		table.insert(lists_top,1,"craft")
+		table.insert(lists_bot,1,"main")
 		if inventory["main"] then
 			W = math.ceil(#inventory["main"]/4)
 			if W < 8 then
 				W = 8
 			end
 		end
-		offset:reset()
-		tab = 1
+		offset_top:reset()
+		offset_bot:reset()
+		tab_top = 1
+		tab_bot = 1
 	end
 	local ctrl = core.localplayer:get_control()
 	if ctrl and ctrl.aux1 and not ctrl.sneak then
 		core.after(0,function()
-			inv_fs()
+			cinv()
 		end)
 	end
 end)
@@ -78,23 +92,30 @@ end)
 core.register_chatcommand("cinv",{
   description = "Open Custom Inventory",
   func = function(param)
-	inv_fs()
-	return true, table.concat(lists,", ")
+	cinv()
+	return true, table.concat(lists_top,", ")
 end})
 
 core.register_on_formspec_input(function(formname,fields)
 	if formname ~= "cinv" then return end
-	if fields.tabs then
-		tab = tonumber(fields.tabs) or 1
-		inv_fs()
+	if fields.tabs_top then
+		tab_top = tonumber(fields.tabs_top) or 1
+		cinv()
+		return
 	end
-	if fields.scroll then
-		local evnt = core.explode_scrollbar_event(fields.scroll)
-		offset[tab] = evnt.value
-		inv_fs()
+	if fields.tabs_bot then
+		tab_bot = tonumber(fields.tabs_bot) or 1
+		cinv()
+		return
 	end
-	if fields.page and fields.key_enter_field == "page" then
-		page = tonumber(fields.page) or page
-		inv_fs()
+	if fields.scroll_top then
+		local evnt = core.explode_scrollbar_event(fields.scroll_top)
+		offset_top[tab_top] = evnt.value
+		cinv()
+	end
+	if fields.scroll_bot then
+		local evnt = core.explode_scrollbar_event(fields.scroll_bot)
+		offset_bot[tab_bot] = evnt.value
+		cinv()
 	end
 end)
